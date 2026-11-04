@@ -79,18 +79,20 @@ STATEMENT_HEADER_CARD_STYLE = {
 }
 
 STATEMENT_TITLE_STYLE = {
-    "color": "#0f172a",
-    "margin": "0 0 4px 0",
+    "color": "#111111",
+    "margin": "0 0 10px 0",
     "fontWeight": "bold",
     "fontFamily": "sans-serif",
     "fontSize": "22px",
 }
 
 STATEMENT_SUBTITLE_STYLE = {
-    "color": "#64748b",
-    "margin": "0",
+    "color": "#4e4e4e",
+    "margin": "0 auto",
     "fontSize": "14px",
     "fontFamily": "sans-serif",
+    "textWrap": "balance",
+    "maxWidth": "720px",
 }
 
 STATEMENT_CONTENT_STYLE = {
@@ -112,6 +114,7 @@ SECTION_TITLE_STYLE = {
     "color": "#0f172a",
     "fontSize": "16px",
     "marginBottom": "16px",
+    "fontWeight": "bold",
 }
 
 FILTER_LABEL_STYLE = {
@@ -382,6 +385,18 @@ def build_dfc_page(
         },
         children=[
             build_statement_filter_field(
+                "Ano(s)",
+                dcc.Dropdown(
+                    id="dfc-years",
+                    options=[{"label": f"Ano {year}", "value": year} for year in years],
+                    value=list(years),
+                    multi=True,
+                    clearable=False,
+                    searchable=True,
+                ),
+                width="218px",
+            ),
+            build_statement_filter_field(
                 "Cenário",
                 dcc.Dropdown(
                     id="dfc-scenario",
@@ -393,19 +408,7 @@ def build_dfc_page(
                     clearable=False,
                     searchable=True,
                 ),
-                width="260px",
-            ),
-            build_statement_filter_field(
-                "Anos",
-                dcc.Dropdown(
-                    id="dfc-years",
-                    options=[{"label": f"Ano {year}", "value": year} for year in years],
-                    value=list(years),
-                    multi=True,
-                    clearable=False,
-                    searchable=True,
-                ),
-                width="260px",
+                width="218px",
             ),
         ],
     )
@@ -648,6 +651,7 @@ def create_main_layout(
         className="app-container",
         children=[
             dcc.Location(id="url", refresh=False),
+            dcc.Store(id="simplified-view-active-store"),
             navbar,
             dashboard_div,
             dre_div,
