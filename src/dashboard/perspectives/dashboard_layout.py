@@ -1,3 +1,4 @@
+import re
 from dash import html, dcc, dash_table
 import pandas as pd
 from ui_elements import row, panel
@@ -105,24 +106,48 @@ def _brl(value):
 
 
 def _balanco_cell_value(balance_sheet, year, account):
+    if year not in balance_sheet.index:
+        return 0.0
     if account == "__TOTAL_ATIVO_NAO_CIRCULANTE__":
-        total_ativo = balance_sheet.at[year, "BAL Total do Ativo"]
-        ativo_circ = balance_sheet.at[year, "BAL Ativo Circulante"]
+        total_ativo = (
+            balance_sheet.at[year, "BAL Total do Ativo"]
+            if "BAL Total do Ativo" in balance_sheet.columns
+            else 0.0
+        )
+        ativo_circ = (
+            balance_sheet.at[year, "BAL Ativo Circulante"]
+            if "BAL Ativo Circulante" in balance_sheet.columns
+            else 0.0
+        )
         return (0.0 if pd.isna(total_ativo) else total_ativo) - (
             0.0 if pd.isna(ativo_circ) else ativo_circ
         )
     if account == "__TOTAL_PASSIVO_NAO_CIRCULANTE__":
         parts = (
-            balance_sheet.at[year, "BAL Outros deb"],
-            balance_sheet.at[year, "BAL Emprest"],
-            balance_sheet.at[year, "BAL Prov para Contingencias"],
+            balance_sheet.at[year, "BAL Outros deb"]
+            if "BAL Outros deb" in balance_sheet.columns
+            else 0.0,
+            balance_sheet.at[year, "BAL Emprest"]
+            if "BAL Emprest" in balance_sheet.columns
+            else 0.0,
+            balance_sheet.at[year, "BAL Prov para Contingencias"]
+            if "BAL Prov para Contingencias" in balance_sheet.columns
+            else 0.0,
         )
         return sum(0.0 if pd.isna(v) else v for v in parts)
-    return balance_sheet.at[year, account]
+    return (
+        balance_sheet.at[year, account]
+        if account in balance_sheet.columns
+        else 0.0
+    )
 
 
 def build_dfc_table(data, years, scenario):
-    cash_flow = data.loc[data["Cenário"].eq(scenario)].set_index("Ano")
+    if isinstance(scenario, (list, tuple, set)):
+        target_scenario = next(iter(scenario)) if len(scenario) > 0 else (data["Cenário"].dropna().iloc[0] if "Cenário" in data.columns else "Cenário 1")
+    else:
+        target_scenario = scenario
+    cash_flow = data.loc[data["Cenário"].eq(target_scenario)].set_index("Ano")
     columns = [f"Ano {year}" for year in years]
     return html.Table(
         [
@@ -137,7 +162,16 @@ def build_dfc_table(data, years, scenario):
                     html.Tr(
                         [html.Th(label, scope="row")]
                         + [
-                            html.Td(_brl(cash_flow.at[year, account]))
+                            html.Td(
+                                _brl(
+                                    cash_flow.at[year, account]
+                                    if (
+                                        year in cash_flow.index
+                                        and account in cash_flow.columns
+                                    )
+                                    else 0.0
+                                )
+                            )
                             for year in columns
                         ],
                         className=(
@@ -155,7 +189,11 @@ def build_dfc_table(data, years, scenario):
 
 
 def build_balanco_table(data, years, scenario):
-    balance_sheet = data.loc[data["Cenário"].eq(scenario)].set_index("Ano")
+    if isinstance(scenario, (list, tuple, set)):
+        target_scenario = next(iter(scenario)) if len(scenario) > 0 else (data["Cenário"].dropna().iloc[0] if "Cenário" in data.columns else "Cenário 1")
+    else:
+        target_scenario = scenario
+    balance_sheet = data.loc[data["Cenário"].eq(target_scenario)].set_index("Ano")
     columns = [f"Ano {year}" for year in years]
     return html.Table(
         [
@@ -198,41 +236,44 @@ def build_balanco_table(data, years, scenario):
 
 
 # ==============================================================================
-# FINANCIAL STATEMENTS (DRE / DFC) UNIFIED DESIGN SYSTEM
+# FINANCIAL STATEMENTS (DRE / DFC / BALANÇO) UNIFIED DESIGN SYSTEM
 # ==============================================================================
 STATEMENT_CONTAINER_STYLE = {
-    "backgroundColor": "#f8fafc",
-    "minHeight": "100vh",
-    "padding": "30px",
+    "backgroundColor": "transparent",
     "display": "flex",
     "flexDirection": "column",
     "gap": "24px",
 }
 
 STATEMENT_HEADER_CARD_STYLE = {
-    "backgroundColor": "#ffffff",
-    "padding": "24px",
-    "borderRadius": "8px",
-    "border": "1px solid #e2e8f0",
-    "boxShadow": "0 1px 3px rgba(0,0,0,0.05)",
+    "backgroundColor": "var(--sky)",
+    "padding": "20px",
+    "borderRadius": "var(--radius-lg)",
+    "border": "1px solid rgba(2, 132, 199, 0.2)",
     "textAlign": "center",
+    "boxShadow": "var(--shadow-sm)",
+    "position": "relative",
+    "overflow": "hidden",
 }
 
 STATEMENT_TITLE_STYLE = {
-    "color": "#111111",
-    "margin": "0 0 10px 0",
-    "fontWeight": "bold",
-    "fontFamily": "sans-serif",
-    "fontSize": "22px",
+    "color": "var(--ink)",
+    "margin": "0 0 8px 0",
+    "fontWeight": "600",
+    "fontFamily": "inherit",
+    "fontSize": "1.75rem",
+    "letterSpacing": "-0.025em",
+    "lineHeight": "1.15",
 }
 
 STATEMENT_SUBTITLE_STYLE = {
-    "color": "#4e4e4e",
+    "opacity": "1",
     "margin": "0 auto",
-    "fontSize": "14px",
-    "fontFamily": "sans-serif",
+    "fontSize": "0.95rem",
+    "fontFamily": "inherit",
     "textWrap": "balance",
-    "maxWidth": "720px",
+    "maxWidth": "760px",
+    "lineHeight": "1.45",
 }
 
 STATEMENT_CONTENT_STYLE = {
@@ -243,24 +284,28 @@ STATEMENT_CONTENT_STYLE = {
 }
 
 STATEMENT_CARD_STYLE = {
-    "backgroundColor": "#ffffff",
-    "borderRadius": "8px",
-    "border": "1px solid #e2e8f0",
-    "padding": "20px",
+    "backgroundColor": "rgba(255, 255, 255, 0.9)",
+    "backdropFilter": "blur(20px) saturate(180%)",
+    "WebkitBackdropFilter": "blur(20px) saturate(180%)",
+    "borderRadius": "var(--radius-lg)",
+    "border": "1px solid var(--line)",
+    "padding": "24px",
+    "boxShadow": "var(--shadow-sm)",
 }
 
 SECTION_TITLE_STYLE = {
-    "color": "#0f172a",
-    "fontSize": "16px",
-    "marginBottom": "16px",
-    "fontWeight": "bold",
+    "color": "var(--ink)",
+    "fontSize": "1.25rem",
+    "marginBottom": "18px",
+    "fontWeight": "600",
+    "letterSpacing": "-0.02em",
+    "fontFamily": "inherit",
 }
 
 FILTER_LABEL_STYLE = {
-    "fontSize": "12px",
-    "fontWeight": "600",
-    "color": "var(--dark-blue)",
-    "marginBottom": "4px",
+    "fontSize": "0.95rem",
+    "color": "var(--ink)",
+    "marginBottom": "6px",
     "display": "block",
 }
 
@@ -366,7 +411,6 @@ def build_dre_table(dre_data):
                         html.Th(
                             "Valor Consolidado",
                             scope="col",
-                            style={"textAlign": "right"},
                         ),
                     ]
                 )
@@ -380,7 +424,7 @@ def build_dre_table(dre_data):
                                 style={
                                     "textAlign": "center",
                                     "fontWeight": "bold",
-                                    "color": "#94a3b8",
+                                    "color": "var(--ink-weak)",
                                 },
                             ),
                             html.Th(row.get("conta", ""), scope="row"),
@@ -411,22 +455,22 @@ def build_statement_page(
     subtitle: str,
     table_title: str,
     table_id: str,
-    filtro_ano_id: str,
-    filtro_cenario_id: str,
-    melhores_anos_metrica_id: str,
-    melhores_anos_graph_id: str,
-    melhores_anos_options: list,
-    top10_ano_id: str,
-    top10_metrica_id: str,
-    top10_graph_id: str,
-    top10_options: list,
-    years: list,
-    scenarios: list,
+    melhores_anos_metrica_id: str = None,
+    melhores_anos_graph_id: str = None,
+    melhores_anos_options: list = None,
+    top10_ano_id: str = None,
+    top10_metrica_id: str = None,
+    top10_graph_id: str = None,
+    top10_options: list = None,
+    years: list = None,
+    scenarios: list = None,
+    filtro_ano_id: str = None,
+    filtro_cenario_id: str = None,
 ):
     """Constrói a árvore DOM de uma página de demonstrativo financeiro vertical (e.g. DRE).
 
-    Layout: header card → tabela vertical (sinal/conta/valor) com filtros de ano/cenário
-    → gráfico de melhores anos+cenários → gráfico top-10 cenários por ano.
+    Layout: header card → tabela vertical (sinal/conta/valor)
+    → gráfico top-10 cenários por ano (usando o seletor de ano da barra lateral).
     """
     header_card = html.Div(
         style=STATEMENT_HEADER_CARD_STYLE,
@@ -436,68 +480,48 @@ def build_statement_page(
         ],
     )
 
-    table_filters = html.Div(
-        style={"marginBottom": "20px", "display": "flex", "gap": "16px"},
-        children=[
-            build_statement_filter_field(
-                "Ano",
-                dcc.Dropdown(
-                    id=filtro_ano_id,
-                    options=[{"label": f"Ano {a}", "value": a} for a in years],
-                    value=1,
-                    clearable=False,
-                    placeholder="Selecione o ano...",
-                ),
-                width="220px",
-            ),
-            build_statement_filter_field(
-                "Cenário",
-                dcc.Dropdown(
-                    id=filtro_cenario_id,
-                    options=[{"label": str(c), "value": c} for c in scenarios],
-                    placeholder="Selecione o cenário...",
-                    multi=True,
-                ),
-                width="220px",
-            ),
-        ],
-    )
-
     table_card = build_statement_card(
         table_title,
-        [table_filters, build_statement_table(table_id)],
+        [build_statement_table(table_id)],
     )
 
-    chart2_filters = html.Div(
-        style={"display": "flex", "gap": "16px", "marginBottom": "16px"},
-        children=[
+    filter_fields = []
+    if top10_ano_id:
+        filter_fields.append(
             build_statement_filter_field(
                 "Ano",
                 dcc.Dropdown(
                     id=top10_ano_id,
-                    options=[{"label": f"Ano {a}", "value": a} for a in years],
+                    options=[{"label": f"Ano {a}", "value": a} for a in (years or [])],
                     value=1,
                     clearable=False,
                 ),
                 width="220px",
-            ),
+            )
+        )
+    if top10_metrica_id:
+        filter_fields.append(
             build_statement_filter_field(
                 "Métrica de Avaliação",
                 dcc.Dropdown(
                     id=top10_metrica_id,
-                    options=top10_options,
+                    options=top10_options or [],
                     value=top10_options[0]["value"] if top10_options else None,
                     clearable=False,
                 ),
                 width="240px",
-            ),
-        ],
+            )
+        )
+
+    chart2_filters = html.Div(
+        style={"display": "flex", "gap": "16px", "marginBottom": "16px"},
+        children=filter_fields,
     )
 
     chart2_card = build_statement_card(
         "Melhores Cenários",
         [chart2_filters, dcc.Graph(id=top10_graph_id)],
-        title_color="var(--dark-blue)",
+        title_color="var(--ink)",
     )
 
     return html.Div(
@@ -527,12 +551,7 @@ def build_dfc_page(
 ):
     """Constrói a árvore DOM da página DFC.
 
-    A DFC é um conceito diferente da DRE: exibe uma tabela pivot horizontal com
-    todos os anos nas colunas e um cenário selecionado de cada vez. Não contém
-    gráficos abaixo — apenas os filtros de cenário e anos e a tabela pivot.
-
-    Reutiliza os tokens visuais do design system (header card, card de conteúdo,
-    estilos de filtro) para consistência visual com a DRE.
+    Exibe a tabela DFC parametrizada pelos seletores da barra lateral.
     """
     header_card = html.Div(
         style=STATEMENT_HEADER_CARD_STYLE,
@@ -542,80 +561,11 @@ def build_dfc_page(
         ],
     )
 
-    filters_row = html.Div(
-        style={
-            "marginBottom": "20px",
-            "display": "flex",
-            "gap": "16px",
-            "flexWrap": "wrap",
-        },
-        children=[
-            html.Div(
-                style={"display": "flex", "flexDirection": "column", "width": "218px"},
-                children=[
-                    html.Div(
-                        style={
-                            "display": "flex",
-                            "justifyContent": "space-between",
-                            "alignItems": "center",
-                            "marginBottom": "4px",
-                        },
-                        children=[
-                            html.Label(
-                                "Ano(s)",
-                                style={**FILTER_LABEL_STYLE, "marginBottom": "0"},
-                            ),
-                            html.Button(
-                                "x",
-                                id="dfc-years-clear-btn",
-                                n_clicks=0,
-                                style={
-                                    "background": "none",
-                                    "border": "none",
-                                    "color": "#64748b",
-                                    "fontSize": "11px",
-                                    "fontWeight": "600",
-                                    "cursor": "pointer",
-                                    "padding": "0 2px",
-                                },
-                            ),
-                        ],
-                    ),
-                    dcc.Dropdown(
-                        id="dfc-years",
-                        options=[
-                            {"label": f"Ano {year}", "value": year} for year in years
-                        ],
-                        value=list(years),
-                        multi=True,
-                        clearable=False,
-                        searchable=True,
-                    ),
-                ],
-            ),
-            build_statement_filter_field(
-                "Cenário",
-                dcc.Dropdown(
-                    id="dfc-scenario",
-                    options=[
-                        {"label": f"Cenário {index}", "value": scenario}
-                        for index, scenario in enumerate(scenarios, start=1)
-                    ],
-                    value=scenarios[0],
-                    clearable=False,
-                    searchable=True,
-                ),
-                width="218px",
-            ),
-        ],
-    )
-
     table_card = build_statement_card(
         "Tabela DFC",
         [
-            filters_row,
             html.Div(
-                build_dfc_table(data, years, scenarios[0]),
+                build_dfc_table(data, years, scenarios),
                 id="dfc-table-content",
                 className="dfc-table-wrap",
             ),
@@ -644,7 +594,10 @@ def build_dfc_page(
 def build_balanco_page(
     page_id: str, title: str, subtitle: str, years: list, scenarios: list, data
 ):
-    """Constrói a árvore DOM da página Balanço Patrimonial."""
+    """Constrói a árvore DOM da página Balanço Patrimonial.
+
+    Exibe a tabela do Balanço parametrizada pelos seletores da barra lateral.
+    """
     header_card = html.Div(
         style=STATEMENT_HEADER_CARD_STYLE,
         children=[
@@ -653,80 +606,11 @@ def build_balanco_page(
         ],
     )
 
-    filters_row = html.Div(
-        style={
-            "marginBottom": "20px",
-            "display": "flex",
-            "gap": "16px",
-            "flexWrap": "wrap",
-        },
-        children=[
-            html.Div(
-                style={"display": "flex", "flexDirection": "column", "width": "218px"},
-                children=[
-                    html.Div(
-                        style={
-                            "display": "flex",
-                            "justifyContent": "space-between",
-                            "alignItems": "center",
-                            "marginBottom": "4px",
-                        },
-                        children=[
-                            html.Label(
-                                "Ano(s)",
-                                style={**FILTER_LABEL_STYLE, "marginBottom": "0"},
-                            ),
-                            html.Button(
-                                "x",
-                                id="balanco-years-clear-btn",
-                                n_clicks=0,
-                                style={
-                                    "background": "none",
-                                    "border": "none",
-                                    "color": "#64748b",
-                                    "fontSize": "11px",
-                                    "fontWeight": "600",
-                                    "cursor": "pointer",
-                                    "padding": "0 2px",
-                                },
-                            ),
-                        ],
-                    ),
-                    dcc.Dropdown(
-                        id="balanco-years",
-                        options=[
-                            {"label": f"Ano {year}", "value": year} for year in years
-                        ],
-                        value=list(years),
-                        multi=True,
-                        clearable=False,
-                        searchable=True,
-                    ),
-                ],
-            ),
-            build_statement_filter_field(
-                "Cenário",
-                dcc.Dropdown(
-                    id="balanco-scenario",
-                    options=[
-                        {"label": f"Cenário {index}", "value": scenario}
-                        for index, scenario in enumerate(scenarios, start=1)
-                    ],
-                    value=scenarios[0],
-                    clearable=False,
-                    searchable=True,
-                ),
-                width="218px",
-            ),
-        ],
-    )
-
     table_card = build_statement_card(
         "Tabela Balanço Patrimonial",
         [
-            filters_row,
             html.Div(
-                build_balanco_table(data, years, scenarios[0]),
+                build_balanco_table(data, years, scenarios),
                 id="balanco-table-content",
                 className="dfc-table-wrap",
             ),
@@ -796,144 +680,196 @@ def create_main_layout(
                         title="Balanço",
                     ),
                 ],
-            )
+            ),
+            html.Button(
+                [
+                    html.Span(className="toggle-sidebar-bar"),
+                    html.Span(className="toggle-sidebar-bar"),
+                    html.Span(className="toggle-sidebar-bar"),
+                ],
+                id="toggle-sidebar-btn",
+                className="toggle-sidebar-btn",
+                title="Abrir / Fechar barra lateral",
+                n_clicks=0,
+            ),
         ],
     )
 
     dashboard_div = html.Div(
-    id="dashboard-page",
-    className="dashboard",
-    children=[
-        # Área principal onde os gráficos e secções dinâmicas são injetados
-        html.Main(
-            className="main",
-            children=[
-                html.Div(
-                    id="dashboard-content", 
-                    className="content",
-                    style={
-                        "padding": "24px", # Cria o "gap" ao redor dos gráficos
-                        "width": "100%",
-                        "boxSizing": "border-box"
-                    }
-                )
-            ],
-        ),
-            # Barra lateral de filtros e metadados
-            html.Aside(
-                className="sidebar",
+        id="dashboard-page",
+        className="dashboard",
+        children=[
+            # Área principal onde os gráficos e secções dinâmicas são injetados
+            html.Main(
+                className="main",
                 children=[
-                    # Logótipo e título
                     html.Div(
-                        [html.Div("Nour", className="brand")],
-                        className="brand-lockup",
-                    ),
-                    # Painel 1: Perspetivas
-                    panel(
-                        "Perspetiva",
-                        [
-                            dcc.Tabs(
-                                id="perspective",
-                                value="gestao",
-                                className="segmented",
-                                parent_className="segmented-parent",
-                                content_className="segmented-content",
-                                children=[
-                                    dcc.Tab(
-                                        label=label,
-                                        value=key,
-                                        className="segment",
-                                        selected_className="segment--on",
-                                    )
-                                    for key, label in perspectives.items()
-                                ],
-                            ),
-                            html.P(
-                                list(perspectives.values())[0],
-                                id="perspective-summary",
-                                className="panel-note",
-                            ),
-                        ],
-                    ),
-                    # Painel 2: Recorte temporal e de cenários
-                    panel(
-                        "Recorte",
-                        [
-                            row(
-                                "Anos da concessão",
-                                dcc.RangeSlider(
-                                    id="years",
-                                    min=min_y,
-                                    max=max_y,
-                                    step=1,
-                                    value=[min_y, max_y],
-                                    marks=None,
-                                    tooltip={"placement": "bottom"},
-                                ),
-                                html.Output(
-                                    f"{min_y}–{max_y}",
-                                    id="years-readout",
-                                    className="readout",
-                                ),
-                            ),
-                            row(
-                                "Cenários simulados",
-                                dcc.RangeSlider(
-                                    id="scenarios",
-                                    min=1,
-                                    max=n_scenarios,
-                                    step=1,
-                                    value=[1, n_scenarios],
-                                    marks=None,
-                                    tooltip={"placement": "bottom"},
-                                ),
-                                html.Output(
-                                    f"{n_scenarios:,}".replace(",", "."),
-                                    id="scenarios-readout",
-                                    className="readout",
-                                ),
-                            ),
-                        ],
-                    ),
-                    # Painel 3: Seletor de indicador para distribuição
-                    panel(
-                        "Indicador",
-                        [
-                            row(
-                                "Distribuição",
-                                dcc.Dropdown(
-                                    id="distribution-metric",
-                                    options=[
-                                        {"label": label, "value": key}
-                                        for key, label in metric_labels.items()
-                                        if key in perspective_metrics["gestao"]
-                                    ],
-                                    value="margem_ebitda",
-                                    clearable=False,
-                                ),
+                        id="dashboard-content",
+                        className="content",
+                        style={
+                            "width": "100%",
+                            "boxSizing": "border-box",
+                        },
+                    )
+                ],
+            ),
+        ],
+    )
+
+    # Barra lateral de filtros e metadados compartilhada entre todas as páginas
+    sidebar = html.Aside(
+        className="sidebar",
+        children=[
+            # Logótipo e título
+            html.Div(
+                [html.Div("Nour", className="brand")],
+                className="brand-lockup",
+            ),
+            # Painel 1: Perspetivas (exibido apenas no Dashboard)
+            panel(
+                "Perspetiva",
+                [
+                    dcc.Tabs(
+                        id="perspective",
+                        value="gestao",
+                        className="segmented",
+                        parent_className="segmented-parent",
+                        content_className="segmented-content",
+                        children=[
+                            dcc.Tab(
+                                label=label,
+                                value=key,
+                                className="segment",
+                                selected_className="segment--on",
                             )
+                            for key, label in perspectives.items()
                         ],
                     ),
-                    # Metadados e proveniência dos dados
-                    html.Div(
-                        [
-                            html.Dl(
-                                [
-                                    html.Dt("Base"),
-                                    html.Dd("Dados formatados CTI"),
-                                    html.Dt("Atualização"),
-                                    html.Dd("Leitura direta do arquivo local"),
-                                    html.Dt("Cobertura"),
-                                    html.Dd(
-                                        f"{n_scenarios} cenários · {max_y - min_y + 1} anos"
-                                    ),
-                                ],
-                                className="meta-list",
-                            )
-                        ],
-                        className="meta-list brand-lockup",
+                    html.P(
+                        list(perspectives.values())[0],
+                        id="perspective-summary",
+                        className="panel-note",
                     ),
                 ],
+                id="sidebar-panel-perspective",
+            ),
+            # Painel 2: Recorte temporal e de cenários
+            panel(
+                "Recorte",
+                [
+                    row(
+                        "Anos da concessão",
+                        dcc.RangeSlider(
+                            id="years",
+                            min=min_y,
+                            max=max_y,
+                            step=1,
+                            value=[min_y, max_y],
+                            marks=None,
+                            tooltip={"placement": "bottom"},
+                        ),
+                        dcc.Input(
+                            id="years-input",
+                            type="text",
+                            value=f"{min_y}-{max_y}",
+                            debounce=True,
+                            className="readout-input",
+                            placeholder=f"{min_y}-{max_y}",
+                        ),
+                        label_id="years-row-label",
+                        control_id="years-slider-container",
+                        range_id="years-range-container",
+                        dropdown_control=dcc.Dropdown(
+                            id="single-year-dropdown",
+                            options=[{"label": f"Ano {y}", "value": y} for y in years],
+                            value=min_y,
+                            clearable=False,
+                            className="dash-dropdown",
+                        ),
+                        dropdown_id="single-year-container",
+                    ),
+                    row(
+                        "Cenários simulados",
+                        dcc.RangeSlider(
+                            id="scenarios",
+                            min=1,
+                            max=n_scenarios,
+                            step=1,
+                            value=[1, n_scenarios],
+                            marks=None,
+                            tooltip={"placement": "bottom"},
+                        ),
+                        dcc.Input(
+                            id="scenarios-input",
+                            type="text",
+                            value=f"1-{n_scenarios}",
+                            debounce=True,
+                            className="readout-input",
+                            placeholder=f"1-{n_scenarios}",
+                        ),
+                        label_id="scenarios-row-label",
+                        control_id="scenarios-slider-container",
+                        range_id="scenarios-range-container",
+                        dropdown_control=dcc.Dropdown(
+                            id="single-scenario-dropdown",
+                            options=[
+                                {
+                                    "label": (
+                                        f"Cenário {m.group()}"
+                                        if (m := re.search(r"\d+", str(s)))
+                                        else f"Cenário {idx}"
+                                    ),
+                                    "value": s,
+                                }
+                                for idx, s in enumerate(scenarios, start=1)
+                            ],
+                            value=scenarios[0] if scenarios else 1,
+                            clearable=False,
+                            className="dash-dropdown",
+                        ),
+                        dropdown_id="single-scenario-container",
+                    ),
+                ],
+                id="sidebar-panel-recorte",
+            ),
+            # Painel 3: Seletor de indicador para distribuição (exibido apenas no Dashboard)
+            panel(
+                "Indicador",
+                [
+                    row(
+                        "Distribuição",
+                        dcc.Dropdown(
+                            id="distribution-metric",
+                            options=[
+                                {"label": label, "value": key}
+                                for key, label in metric_labels.items()
+                                if key in perspective_metrics["gestao"]
+                            ],
+                            value="margem_ebitda",
+                            clearable=False,
+                        ),
+                    )
+                ],
+                id="sidebar-panel-indicador",
+            ),
+            # Metadados e proveniência dos dados
+            html.Div(
+                [
+                    html.Dl(
+                        [
+                            html.Dt("Base"),
+                            html.Dd("Dados formatados CTI"),
+                            html.Dt("Atualização"),
+                            html.Dd("Leitura direta do arquivo local"),
+                            html.Dt("Cobertura"),
+                            html.Dd(
+                                f"{n_scenarios} cenários · {max_y - min_y + 1} anos"
+                            ),
+                        ],
+                        className="meta-list",
+                    )
+                ],
+                className="meta-list brand-lockup",
             ),
         ],
     )
@@ -944,15 +880,6 @@ def create_main_layout(
         subtitle="Estrutura contábil da formação do resultado econômico. Detalha receitas, deduções, custos operacionais, despesas e tributos para mensurar a lucratividade líquida e o EBITDA da concessão.",
         table_title="Tabela DRE",
         table_id="tabela-dre-dinamica",
-        filtro_ano_id="dre-filtro-ano",
-        filtro_cenario_id="dre-filtro-cenario",
-        melhores_anos_metrica_id="grafico-melhores-anos-metrica",
-        melhores_anos_graph_id="grafico-melhores-anos-cenarios",
-        melhores_anos_options=[
-            {"label": "Resultado Líquido", "value": "DRE Resultado Liquido"},
-            {"label": "EBITDA", "value": "DRE EBITDA"},
-        ],
-        top10_ano_id="grafico-filtro-ano",
         top10_metrica_id="grafico-filtro-metrica",
         top10_graph_id="grafico-top10-cenarios",
         top10_options=[
@@ -986,10 +913,17 @@ def create_main_layout(
         children=[
             dcc.Location(id="url", refresh=False),
             dcc.Store(id="simplified-view-active-store"),
+            dcc.Store(id="sidebar-collapsed-store", data=False),
             navbar,
-            dashboard_div,
-            dre_div,
-            dfc_div,
-            balanco_div,
+            html.Div(
+                className="pages-container",
+                children=[
+                    dashboard_div,
+                    dre_div,
+                    dfc_div,
+                    balanco_div,
+                ],
+            ),
+            sidebar,
         ],
     )
