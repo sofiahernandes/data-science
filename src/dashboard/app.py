@@ -84,6 +84,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 # ==============================================================================
 import sys, os
 
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from pathlib import Path
 import unicodedata
@@ -96,7 +97,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # Web framework and interactive components
-from dash import Dash, Input, Output, dcc, html
+from dash import Dash, Input, Output, dcc, html, no_update
 
 # Local helper for custom polar petal geometry (Bezier curve coordinates)
 from petals import petal
@@ -135,7 +136,12 @@ from metrics_kpi.terminal_liquidation import build_terminal_liquidation_section
 from perspectives.technical import render_technical_view
 from perspectives.investors import render_investor_view
 from perspectives.management import render_management_view
-from perspectives.dashboard_layout import build_dfc_table, create_main_layout
+from perspectives.dashboard_layout import (
+    build_balanco_table,
+    build_dfc_table,
+    build_dre_table,
+    create_main_layout,
+)
 
 # ==============================================================================
 # PATH RESOLUTION & ENVIRONMENT SETUP
@@ -182,6 +188,8 @@ server = app.server
 @server.route("/dre/")
 @server.route("/dfc")
 @server.route("/dfc/")
+@server.route("/balanco")
+@server.route("/balanco/")
 @server.route("/dashboard")
 @server.route("/dashboard/")
 def serve_spa(*args, **kwargs):
@@ -200,6 +208,7 @@ app.layout = create_main_layout(
 def render_content(
     years, scenarios, selected_metric="margem_ebitda", perspective="gestao"
 ):
+
     # --------------------------------------------------------------------------
     # 1. PARAMETER SANITIZATION & FILTERING
     # --------------------------------------------------------------------------
@@ -229,7 +238,6 @@ def render_content(
     operating = filtered[~filtered.encerramento]
     if operating.empty:
         operating = filtered
-
     # Identify latest operating year in the filtered slice and compare with previous year
     latest_year = int(operating.ano_num.max())
     latest = operating[operating.ano_num.eq(latest_year)]
@@ -309,7 +317,6 @@ def render_content(
     )
     # --------------------------------------------------------------------------
     # 10. PERSPECTIVE VIEW ROUTING
-    # --------------------------------------------------------------------------
     if perspective == "tecnica":
         return render_technical_view(
             index_fig,
@@ -327,17 +334,20 @@ def render_content(
         )
 
     if perspective == "investidores":
-        return render_investor_view(
-            index_fig,
-            subtitle,
-            latest,
-            delta,
-            investor_insights,
-            scatter,
-            value_fig,
-            balance_fig,
-            terminal_children,
-            distribution,
+        return render_investor_view(  # <--- Adicionado o "return" aqui
+            index_fig=index_fig,
+            subtitle=subtitle,
+            latest=latest,
+            delta=delta,
+            investor_insights=investor_insights,
+            scatter=scatter,
+            value_fig=value_fig,
+            balance_fig=balance_fig,
+            terminal_children=terminal_children,
+            distribution=distribution,
+            historical_data=operating,
+            prev=prev,
+            latest_year=latest_year,
         )
 
     # Default: Management / Executive
@@ -353,8 +363,6 @@ def render_content(
         terminal_children,
         distribution,
     )
-
-
 # ==============================================================================
 # REACTIVE CALLBACKS (INTERACTIVITY)
 # ==============================================================================
@@ -437,6 +445,17 @@ app.clientside_callback(
 
 
 @app.callback(
+    Output("dfc-years", "value"),
+    Input("dfc-years-clear-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def limpar_anos_dfc(n_clicks):
+    if n_clicks and len(YEARS) > 0:
+        return [min(YEARS)]
+    return no_update
+
+
+@app.callback(
     Output("dfc-table-content", "children"),
     Input("dfc-scenario", "value"),
     Input("dfc-years", "value"),
@@ -451,12 +470,39 @@ def render_dfc(scenario, years):
 
 
 @app.callback(
+    Output("balanco-years", "value"),
+    Input("balanco-years-clear-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def limpar_anos_balanco(n_clicks):
+    if n_clicks and len(YEARS) > 0:
+        return [min(YEARS)]
+    return no_update
+
+
+@app.callback(
+    Output("balanco-table-content", "children"),
+    Input("balanco-scenario", "value"),
+    Input("balanco-years", "value"),
+)
+def render_balanco(scenario, years):
+    selected_years = [year for year in YEARS if year in (years or YEARS)]
+    return build_balanco_table(
+        DATA,
+        selected_years,
+        scenario if scenario in SCENARIOS else SCENARIOS[0],
+    )
+
+
+@app.callback(
     Output("dashboard-page", "style"),
     Output("dre-page", "style"),
     Output("dfc-page", "style"),
+    Output("balanco-page", "style"),
     Output("tab-dashboard", "className"),
     Output("tab-dre", "className"),
     Output("tab-dfc", "className"),
+    Output("tab-balanco", "className"),
     Input("url", "pathname"),
 )
 def display_page(pathname):
@@ -470,8 +516,10 @@ def display_page(pathname):
             {"display": "none"},
             {"display": "block"},
             {"display": "none"},
+            {"display": "none"},
             base_tab,
             active_tab,
+            base_tab,
             base_tab,
         )
 
@@ -480,6 +528,20 @@ def display_page(pathname):
             {"display": "none"},
             {"display": "none"},
             {"display": "block"},
+            {"display": "none"},
+            base_tab,
+            base_tab,
+            active_tab,
+            base_tab,
+        )
+
+    elif clean_path == "/balanco":
+        return (
+            {"display": "none"},
+            {"display": "none"},
+            {"display": "none"},
+            {"display": "block"},
+            base_tab,
             base_tab,
             base_tab,
             active_tab,
@@ -489,7 +551,9 @@ def display_page(pathname):
             {},
             {"display": "none"},
             {"display": "none"},
+            {"display": "none"},
             active_tab,
+            base_tab,
             base_tab,
             base_tab,
         )
@@ -539,7 +603,7 @@ def atualizar_options_cenario_dre(ano_selecionado):
 
 
 @app.callback(
-    Output("tabela-dre-dinamica", "data"),
+    Output("tabela-dre-dinamica", "children"),
     Input("dre-filtro-ano", "value"),
     Input("dre-filtro-cenario", "value"),
 )
@@ -564,7 +628,7 @@ def atualizar_tabela_dre(anos, cenarios):
         df_filtrado = df_filtrado[df_filtrado[col_cenario].isin(lista_cenarios)]
 
     if df_filtrado.empty:
-        return []
+        return build_dre_table([])
 
     linha = df_filtrado.median(numeric_only=True)
 
@@ -653,7 +717,7 @@ def atualizar_tabela_dre(anos, cenarios):
         },
     ]
 
-    return dre_vertical
+    return build_dre_table(dre_vertical)
 
 
 @app.callback(
