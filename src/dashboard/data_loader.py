@@ -76,9 +76,7 @@ def load_data(path: Path) -> pd.DataFrame:
             raise KeyError(f"Conta não encontrada: {name}")
         return wide[found[0]]
 
-    # --------------------------------------------------------------------------
     # 1. EXTRACT RAW BASE ACCOUNTS (BALANÇO & DRE)
-    # --------------------------------------------------------------------------
     receita, ac, pc = (
         col("DRE Receita"),  # Gross Revenue
         col("BAL Ativo Circulante"),  # Current Assets (short-term)
@@ -108,9 +106,7 @@ def load_data(path: Path) -> pd.DataFrame:
         axis=1,
     ).sum(axis=1)
 
-    # --------------------------------------------------------------------------
     # 2. DRE METRICS (INCOME STATEMENT)
-    # --------------------------------------------------------------------------
     wide["receita"] = receita
     wide["custos_variaveis"] = col("DRE Custos").abs()
     wide["ebitda"] = col("DRE EBITDA")
@@ -121,18 +117,14 @@ def load_data(path: Path) -> pd.DataFrame:
     wide["margem_ebitda"] = wide.ebitda.div(receita)
     wide["margem_liquida"] = wide.resultado_liquido.div(receita)
 
-    # --------------------------------------------------------------------------
     # 3. PROFITABILITY & RETURN RATIOS
-    # --------------------------------------------------------------------------
     # ROA (Return on Assets): Net Profit / Total Assets
     wide["roa"] = wide.resultado_liquido.div(ativo)
 
     # ROE (Return on Equity): Net Profit / Shareholders' Equity
     wide["roe"] = wide.resultado_liquido.div(pl.abs())
 
-    # --------------------------------------------------------------------------
     # 4. LIQUIDITY INDICATORS (SHORT-TERM SOLVENCY)
-    # --------------------------------------------------------------------------
     # Current Liquidity: Current Assets / Current Liabilities (> 1.0 indicates safety)
     wide["liquidez_corrente"] = ac.div(pc).abs()
 
@@ -145,9 +137,7 @@ def load_data(path: Path) -> pd.DataFrame:
     # General Liquidity: (Current Assets + Long-Term Receivables) / Total Debt
     wide["liquidez_geral"] = (ac + rlp).div(divida).abs()
 
-    # --------------------------------------------------------------------------
     # 5. CAPITAL STRUCTURE & INDEBTEDNESS
-    # --------------------------------------------------------------------------
     # Debt-to-Equity Ratio: Total Debt / Equity
     wide["participacao_capital_terceiros"] = divida.div(pl).abs()
 
@@ -161,9 +151,7 @@ def load_data(path: Path) -> pd.DataFrame:
     wide["divida_total"] = divida.abs()
     wide["ativo_total"], wide["patrimonio_liquido"], wide["caixa"] = ativo, pl, caixa
 
-    # --------------------------------------------------------------------------
     # 6. CASH FLOW STATEMENT (FLU)
-    # --------------------------------------------------------------------------
     wide["geracao_caixa"] = col("FLU Geração de Caixa")  # Operating Cash Flow
     wide["investimentos"] = col("FLU Investimentos")  # Capex / Investments
     wide["distribuicao_acionista"] = col(
@@ -180,9 +168,7 @@ def load_data(path: Path) -> pd.DataFrame:
         "FLU Distribuição para Acionista"
     )
 
-    # --------------------------------------------------------------------------
     # 7. ECONOMIC VALUE ADDED (EVA)
-    # --------------------------------------------------------------------------
     # Formula: NOPAT - (Invested Capital * Cost of Capital)
     # - resultado_operacional * 0.66: Net Operating Profit After Tax (assuming 34% corporate tax)
     # - (ativo - pc): Invested Capital (Total Assets minus Non-interest Bearing Current Liabilities)
@@ -193,42 +179,38 @@ def load_data(path: Path) -> pd.DataFrame:
 
     wide["roic"] = nopat / capital_investido.replace(0, float("nan"))
 
-    # --------------------------------------------------------------------------
     # 7.1 INVESTOR DASHBOARD METRICS
-    # --------------------------------------------------------------------------
-    # Novas colunas exclusivas para a visão do investidor.
-    # As colunas originais e os indicadores existentes são preservados.
+    # Dedicated columns for the investor perspective.
+    # Original columns and existing indicators are preserved.
 
-    tributos_investidor = col("DRE Tributos")
+    investor_taxes = col("DRE Tributos")
 
-    emprestimos_cp_investidor = col("BAL Emprestimos").abs()
-    emprestimos_lp_investidor = col("BAL Emprest").abs()
+    investor_short_term_loans = col("BAL Emprestimos").abs()
+    investor_long_term_loans = col("BAL Emprest").abs()
 
-    # Receita líquida = Receita bruta + Tributos
-    wide["investor_receita_liquida"] = receita + tributos_investidor
+    # Net revenue = Gross revenue + Taxes (taxes are negative in the ledger)
+    wide["investor_receita_liquida"] = receita + investor_taxes
 
-    # Lucro líquido
+    # Net profit
     wide["investor_lucro_liquido"] = wide["resultado_liquido"]
 
-    # Margem líquida
+    # Net margin (in percentage points, 0–100 scale)
     wide["investor_margem_liquida"] = (
         wide["investor_lucro_liquido"]
         / wide["investor_receita_liquida"].replace(0, float("nan"))
     ) * 100
 
-    # Dívida líquida = Empréstimos CP + LP - Caixa
+    # Net debt = Short-term loans + Long-term loans - Cash
     wide["investor_divida_liquida"] = (
-        emprestimos_cp_investidor + emprestimos_lp_investidor - caixa
+        investor_short_term_loans + investor_long_term_loans - caixa
     )
 
-    # Dívida líquida / EBITDA
+    # Net debt / EBITDA
     wide["investor_divida_ebitda"] = wide["investor_divida_liquida"] / wide[
         "ebitda"
     ].replace(0, float("nan"))
 
-    # --------------------------------------------------------------------------
     # 8. TERMINAL YEAR ADJUSTMENTS
-    # --------------------------------------------------------------------------
     # In Year 12 (concession handback/liquidation), traditional financial ratios
     # are distorted by contractual asset transfers. We mask them as NaN so they
     # do not skew ongoing operational trends.

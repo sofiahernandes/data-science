@@ -1,6 +1,3 @@
-# ==============================================================================
-# DESIGN SYSTEM TOKENS (TYPOGRAPHY & PALETTE)
-# ==============================================================================
 # Apple-inspired system font stack prioritizing native rendering, optical clarity and tracking
 FONT_STACK = (
     "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', "
