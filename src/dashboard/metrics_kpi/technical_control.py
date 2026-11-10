@@ -1,15 +1,18 @@
-from ui_elements import card, percent, ratio
+"""KPI tiles for the Technical / Controllership financial health section."""
+
+from components import card, percent, ratio
 
 
+# KPI TILES: Financial Health & Controls (Technical)
 def build_technical_controls_tiles(latest, prev):
-    """Calcula e monta os cartões de controles técnicos e liquidez (tiles2)."""
+    """Compute deltas and build the technical control and liquidity KPI cards."""
 
     def delta(metric):
         if prev.empty or metric not in latest.columns or metric not in prev.columns:
             return None
         return latest[metric].median() - prev[metric].median()
 
-    tiles2 = [
+    return [
         card(
             "Margem EBITDA",
             percent(latest.margem_ebitda.median()),
@@ -44,5 +47,3 @@ def build_technical_controls_tiles(latest, prev):
             icon="lucide:droplet",
         ),
     ]
-
-    return tiles2

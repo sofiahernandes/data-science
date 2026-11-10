@@ -1,16 +1,18 @@
-from ui_elements import card, money
+"""KPI tiles for the Management operational summary section."""
+
+from components import card, money
 
 
+# KPI TILES: Operational Overview (Management)
 def build_operational_overview_tiles(latest, prev):
-    """Calcula as variações e monta os cartões operacionais."""
-    
+    """Compute year-over-year deltas and build the operational summary KPI cards."""
+
     def delta(metric):
         if prev.empty or metric not in latest.columns or metric not in prev.columns:
             return None
-
         return latest[metric].median() - prev[metric].median()
 
-    tiles1 = [
+    return [
         card(
             "Receita",
             money(latest.receita.median()),
@@ -47,5 +49,3 @@ def build_operational_overview_tiles(latest, prev):
             icon="andrsrxn:money-bag",
         ),
     ]
-
-    return tiles1

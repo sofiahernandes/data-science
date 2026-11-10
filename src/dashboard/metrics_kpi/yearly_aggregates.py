@@ -1,9 +1,13 @@
+"""Yearly median aggregations for multi-year time-series charts."""
+
+
+# AGGREGATION: Yearly Medians Across Scenarios
 def compute_yearly_medians(operating):
-    """Calcula as medianas anuais detalhadas para as métricas da concessão."""
+    """Compute annual median values for time-series charts across operating years."""
     if operating.empty:
         return operating
 
-    by_year = operating.groupby(["ano_num", "ano_calendario"], as_index=False).agg(
+    return operating.groupby(["ano_num", "ano_calendario"], as_index=False).agg(
         receita=("receita", "median"),
         ebitda=("ebitda", "median"),
         margem_ebitda=("margem_ebitda", "median"),
@@ -13,4 +17,3 @@ def compute_yearly_medians(operating):
         eva=("eva", "median"),
         geracao_caixa=("geracao_caixa", "median"),
     )
-    return by_year

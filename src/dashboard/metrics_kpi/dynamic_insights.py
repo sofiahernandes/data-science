@@ -1,20 +1,23 @@
-# src/dashboard/metrics_kpis/dynamic_insights.py
+"""Threshold-driven narrative insights for Management, Technical, and Investor views."""
+
 import pandas as pd
-from ui_elements import insight, money, percent, ratio
+
+from components import insight, money, percent, ratio
 
 
+# INSIGHTS: Management, Technical & Investor Cards
 def compute_dynamic_insights(
     latest, prev, risk, latest_year, selected_metric, metric_labels
 ):
-    """Calcula e monta os insights dinâmicos baseados em limiares para gestores, técnicos e investidores."""
+    """Compute and build dynamic insight cards for management, technical, and investor views."""
 
-    # Tratamento de deltas auxiliares locais
+    # Helper for year-over-year median deltas
     def delta(metric):
         if prev.empty or metric not in latest.columns or metric not in prev.columns:
             return None
         return latest[metric].median() - prev[metric].median()
 
-    # Filtro de risco para o ano mais recente
+    # Extract risk probabilities for the latest operating year
     target_year = 2026 + latest_year
     risk_filtered = risk.loc[risk["ano_calendario"].eq(target_year)]
 
@@ -29,7 +32,7 @@ def compute_dynamic_insights(
     revenue_change = delta("receita")
     margin_change = delta("margem_ebitda")
 
-    # Quartis/Percentis da métrica selecionada
+    # 10th and 90th percentiles for the currently selected distribution metric
     selected_values = (
         latest[selected_metric].dropna()
         if not latest.empty and selected_metric in latest.columns
