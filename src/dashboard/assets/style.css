@@ -861,7 +861,7 @@ body:has(.simplified-view-toggle input[type="checkbox"]:checked)
   padding: 4px 10px;
   margin-top: 12px;
   border-radius: 20px;
-  font-size: 10px;
+  font-size: 0.85rem;
   font-weight: 500;
   line-height: 1.2;
   white-space: nowrap;
@@ -981,7 +981,7 @@ body:has(.simplified-view-toggle input[type="checkbox"]:checked)
   background: var(--material-sidebar);
   backdrop-filter: blur(var(--material-blur)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--material-blur)) saturate(180%);
-  border-left: 1px solid var(--line);
+  border-left: 1px solid var(--line-strong);
   z-index: 90;
   transition: transform var(--duration-smooth) var(--ease-spring);
 
@@ -1346,6 +1346,7 @@ div[class*="dash-slider-range"] {
   border-radius: var(--radius);
   border: 1px solid var(--line);
   color: var(--ink);
+  font-size: 1rem;
 }
 
 .empty-state {
@@ -1456,7 +1457,7 @@ div[class*="dash-slider-range"] {
 .investor-panel-title {
   margin: 0;
   color: #111827;
-  font-size: 18px;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -1481,7 +1482,7 @@ div[class*="dash-slider-range"] {
 .panel-header-title {
   margin: 0;
   color: #111827;
-  font-size: 18px;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.2;
 }
@@ -1625,7 +1626,7 @@ div[class*="dash-slider-range"] {
   position: absolute;
   bottom: -21px;
   color: #6b706b;
-  font-size: 10px;
+  font-size: 0.85rem;
   font-weight: 500;
   line-height: 1;
 }
@@ -1683,7 +1684,7 @@ div[class*="dash-slider-range"] {
   color: #501839;
   background-color: #f1f5f9;
   border-radius: 9px;
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -1695,14 +1696,14 @@ div[class*="dash-slider-range"] {
 .performance-label {
   margin-bottom: 2px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 0.95rem;
   font-weight: 500;
   line-height: 1.2;
 }
 
 .performance-value {
   color: #111827;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.25;
   overflow-wrap: anywhere;
@@ -1732,7 +1733,7 @@ div[class*="dash-slider-range"] {
   gap: 8px;
   min-width: 0;
   margin-bottom: 12px;
-  font-size: 12px;
+  font-size: 0.95rem;
 }
 
 .legend-item:last-child {
@@ -1774,7 +1775,7 @@ div[class*="dash-slider-range"] {
   align-items: center;
   gap: 6px;
   color: #555555;
-  font-size: 11px;
+  font-size: 0.95rem;
 }
 
 .legend-square {
@@ -1885,7 +1886,7 @@ div[class*="dash-slider-range"] {
     width: 100%;
     height: auto;
     min-height: 100vh;
-    border: 1px solid var(--line);
+    border: 1px solid var(--line-strong);
     border-left: none;
   }
 
@@ -1932,7 +1933,7 @@ div[class*="dash-slider-range"] {
 
   .panel-header-title,
   .investor-panel-title {
-    font-size: 16px;
+    font-size: 1rem;
   }
 
   .performance-item {
@@ -1940,13 +1941,13 @@ div[class*="dash-slider-range"] {
   }
 
   .performance-value {
-    font-size: 15px;
+    font-size: 1rem;
   }
 
   .investor-badge {
     padding: 4px 10px;
     margin-top: 12px;
-    font-size: 10px;
+    font-size: 0.85rem;
   }
 }
 

@@ -65,7 +65,7 @@
   margin: 0;
 
   color: #111827;
-  font-size: 18px;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -97,7 +97,7 @@
   margin: 0;
 
   color: #111827;
-  font-size: 18px;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -272,7 +272,7 @@
   bottom: -21px;
 
   color: #6b706b;
-  font-size: 10px;
+  font-size: 0.85rem;
   font-weight: 500;
   line-height: 1;
 }
@@ -344,7 +344,7 @@
 
   border-radius: 9px;
 
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -357,14 +357,14 @@
   margin-bottom: 2px;
 
   color: #64748b;
-  font-size: 11px;
+  font-size: 0.95rem;
   font-weight: 500;
   line-height: 1.2;
 }
 
 .performance-value {
   color: #111827;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1.25;
 
@@ -386,7 +386,7 @@
 
   border-radius: 20px;
 
-  font-size: 10px;
+  font-size: 0.85rem;
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
@@ -438,7 +438,7 @@
   min-width: 0;
   margin-bottom: 12px;
 
-  font-size: 12px;
+  font-size: 0.95rem;
 }
 
 .legend-item:last-child {
@@ -486,7 +486,7 @@
 
 .panel-expand-icon {
   color: #64748b;
-  font-size: 20px;
+  font-size: 1.2rem;
   cursor: default;
 }
 
@@ -513,7 +513,7 @@
   gap: 6px;
 
   color: #555555;
-  font-size: 11px;
+  font-size: 0.95rem;
 }
 
 .legend-square {
@@ -577,7 +577,7 @@
 
 .kpi-title {
   color: #374151;
-  font-size: 12px;
+  font-size: 0.95rem;
   font-weight: 600;
 }
 
@@ -608,7 +608,7 @@
   align-items: center;
   gap: 4px;
 
-  font-size: 10px;
+  font-size: 0.85rem;
 }
 
 .kpi-variation-text {
@@ -664,7 +664,7 @@
 
   color: #4e4e4e;
   font-family: sans-serif;
-  font-size: 14px;
+  font-size: 0.95rem;
 
   text-wrap: balance;
 }
@@ -762,7 +762,7 @@
 
   .panel-header-title,
   .investor-panel-title {
-    font-size: 16px;
+    font-size: 1rem;
   }
 
   .performance-item {
@@ -770,7 +770,7 @@
   }
 
   .performance-value {
-    font-size: 15px;
+    font-size: 1rem;
   }
 
   .investor-badge {
