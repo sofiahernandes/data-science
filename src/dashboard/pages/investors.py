@@ -20,7 +20,6 @@ def render(ctx):
             page_header(
                 "Visão do Investidor",
                 "Rentabilidade, geração de caixa e criação de valor para o capital investido.",
-                margin_bottom="16px",
             ),
             investor_summary_section(ctx),
             investor_detailed_section(ctx),

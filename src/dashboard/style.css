@@ -890,15 +890,6 @@ body:has(.simplified-view-toggle input[type="checkbox"]:checked)
   display: none !important;
 }
 
-body:has(.simplified-view-toggle input[type="checkbox"]:checked) .section h2,
-.dashboard:has(.simplified-view-toggle input[type="checkbox"]:checked)
-  .section
-  h2,
-.page:has(.simplified-view-toggle input[type="checkbox"]:checked) .section h2,
-.simplified-view-active .section h2 {
-  margin-bottom: 24px;
-}
-
 .dash-graph {
   position: relative;
   z-index: 2;
@@ -938,7 +929,7 @@ body:has(.simplified-view-toggle input[type="checkbox"]:checked) .section h2,
 .section h2 {
   margin: 0 0 14px;
   font-size: 1.5rem;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.015em;
   color: var(--ink);
 }

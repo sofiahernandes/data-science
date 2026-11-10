@@ -31,7 +31,7 @@ def render(ctx):
 
     return html.Div(
         [
-            page_header("Visão Técnica", ctx.subtitle, margin_bottom="24px"),
+            page_header("Visão Técnica", ctx.subtitle),
             html.Div(
                 sections,
                 className="technical-main-layout",

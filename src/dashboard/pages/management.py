@@ -43,7 +43,7 @@ def render(ctx):
 
     return html.Div(
         [
-            page_header("Visão do Gestor", ctx.subtitle, margin_bottom="24px"),
+            page_header("Visão do Gestor", ctx.subtitle),
             html.Div(
                 sections,
                 className="management-main-layout",

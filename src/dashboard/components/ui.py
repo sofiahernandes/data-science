@@ -197,12 +197,12 @@ def insight(title, text, tone="neutral"):
 
 
 # PAGE HEADER: Top title banner card
-def page_header(title, subtitle, margin_bottom="24px"):
+def page_header(title, subtitle, margin_bottom="0px"):
     """Build the top header banner shared by perspective views, with the simplified-view toggle in the top-right corner."""
     return html.Div(
         className="statement-header-card",
         children=[
-            html.H1(title, className="statement-title"),
+            html.H2(title, className="statement-title"),
             html.P(subtitle, className="statement-subtitle"),
         ],
         style={"marginBottom": margin_bottom},

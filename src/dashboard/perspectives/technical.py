@@ -42,7 +42,6 @@ def render_technical_view(
                 ),
             ],
             className="statement-header-card",
-            style={"marginBottom": "24px"},
         ),
 
         # CONTEÚDO DA PÁGINA

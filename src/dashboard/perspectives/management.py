@@ -124,7 +124,6 @@ def render_management_view(
                         className="statement-subtitle"
                     ),
                 ],
-                style={"marginBottom": "24px"}
             ),
 
             # CORPO COM AS SEÇÕES EM PILHA

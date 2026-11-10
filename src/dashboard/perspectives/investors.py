@@ -1000,7 +1000,6 @@ def render_investor_view(
                         className="statement-subtitle",
                     ),
                 ],
-                style={"marginBottom": "16px"},
             ),
 
             # RESUMO PARA O INVESTIDOR
